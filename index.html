@@ -238,7 +238,7 @@
     <section class="hero">
       <h1>めんだこフィギュアをカメラで見つけて喋らせる</h1>
       <p class="lead">
-        まず動かすなら、フィギュア本体を直接画像認識させるより、台座か背面に小さなQRコードを貼って認識する方式が最も安定します。
+        QRコードではなく、フィギュアそのものを見て喋らせる試作です。カメラ映像を画像分類モデルに通して、「めんだこ」と判定されたらブラウザ音声でセリフを喋ります。
       </p>
     </section>
 
@@ -251,6 +251,7 @@
 
         <div class="controls">
           <button id="startButton" type="button">カメラ開始</button>
+          <button id="loadModelButton" type="button" class="secondary">モデル読み込み</button>
           <button id="testButton" type="button" class="secondary">セリフ確認</button>
           <button id="stopSpeechButton" type="button" class="secondary">発話停止</button>
         </div>
@@ -261,7 +262,7 @@
           <h2 class="section-title">このページがすること</h2>
           <ul class="list">
             <li>ブラウザでカメラを起動</li>
-            <li>QRコードの文字列が <code>mendako</code> と一致したら</li>
+            <li>読み込んだ画像分類モデルでフィギュアを判定</li>
             <li>ブラウザ音声でセリフを喋る</li>
           </ul>
         </div>
@@ -269,8 +270,16 @@
         <div class="card grid">
           <h2 class="section-title">設定</h2>
           <label>
-            QRコードの文字列
-            <input id="targetText" type="text" value="mendako">
+            モデルURLのベース
+            <input id="modelBaseUrl" type="text" placeholder="https://teachablemachine.withgoogle.com/models/xxxxxx/">
+          </label>
+          <label>
+            めんだこクラス名
+            <input id="targetClassName" type="text" value="mendako">
+          </label>
+          <label>
+            発話しきい値 (0.0 - 1.0)
+            <input id="thresholdInput" type="number" min="0" max="1" step="0.05" value="0.85">
           </label>
           <label>
             セリフ
@@ -291,67 +300,63 @@
         <div class="card">
           <h2 class="section-title">使い方</h2>
           <ol class="steps">
-            <li><code>mendako</code> という文字列のQRコードを作る</li>
-            <li>それをフィギュアの台座か背面に貼る</li>
+            <li>Teachable Machine などで「めんだこ / それ以外」の画像分類モデルを作る</li>
+            <li>公開されたモデルURLをこのページの「モデルURLのベース」に入れる</li>
             <li><code>index.html</code> をChrome系ブラウザで開く</li>
-            <li>カメラ開始 を押す</li>
-            <li>フィギュアを映すと喋る</li>
+            <li>モデル読み込み を押してから カメラ開始 を押す</li>
+            <li>フィギュアを映して、めんだこ判定になったら喋る</li>
           </ol>
         </div>
 
         <div class="card">
-          <h2 class="section-title">なぜこの方式をすすめるか</h2>
+          <h2 class="section-title">この方式の特徴</h2>
           <ul class="list">
-            <li>認識がかなり安定する</li>
-            <li>学習データ作成が不要</li>
-            <li>スマホだけで試せる</li>
-            <li>後から「見た目だけで認識」に置き換えやすい</li>
+            <li>フィギュアそのものを見て反応できる</li>
+            <li>台座マーカーが不要</li>
+            <li>角度や光の違いに対応するには学習画像が必要</li>
+            <li>スマホ単体より、まずPCやAndroid Chromeでの調整がやりやすい</li>
           </ul>
-        </div>
-
-        <div class="card">
-          <h2 class="section-title">次の段階</h2>
-          <p class="copy">フィギュア自体の形や色で認識したいなら、次のどちらかです。</p>
-          <ol class="steps">
-            <li>ノーコード寄り: Google Teachable Machine で「めんだこ / それ以外」を学習し、学習済みモデルをWebページに組み込んで、検出時に <code>speechSynthesis</code> または録音音声を再生する</li>
-            <li>しっかり作る: Python + OpenCV、カスタム物体検出モデル、音声合成APIや録音済み音声、必要なら口パク用ディスプレイやLED追加</li>
-          </ol>
         </div>
 
         <div class="card">
           <h2 class="section-title">おすすめ構成</h2>
           <ol class="steps">
-            <li>QR検出で喋る</li>
+            <li>Teachable Machine で「めんだこ / それ以外」を学習する</li>
+            <li>このページで判定しきい値を調整する</li>
             <li>セリフをランダム化する</li>
-            <li>録音済みの声にする</li>
-            <li>画像認識に置き換える</li>
+            <li>必要なら録音済み音声に置き換える</li>
           </ol>
         </div>
 
         <div class="card">
           <h2 class="section-title">補足</h2>
           <p class="copy">
-            完全に「フィギュア単体だけ」で認識する場合は、光の当たり方、角度、背景で精度が落ちやすいです。展示やイベント用途なら、台座マーカー方式のほうが現実的です。
+            完全に「フィギュア単体だけ」で認識する場合は、光の当たり方、角度、背景で精度が落ちやすいです。正面だけでなく斜め、逆光、背景ありの写真も混ぜて学習させると安定しやすくなります。
           </p>
         </div>
       </aside>
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8/dist/teachablemachine-image.min.js"></script>
   <script>
     const video = document.getElementById("video");
     const statusBadge = document.getElementById("statusBadge");
     const logBox = document.getElementById("logBox");
     const startButton = document.getElementById("startButton");
+    const loadModelButton = document.getElementById("loadModelButton");
     const testButton = document.getElementById("testButton");
     const stopSpeechButton = document.getElementById("stopSpeechButton");
     const scriptInput = document.getElementById("scriptInput");
-    const targetText = document.getElementById("targetText");
+    const modelBaseUrl = document.getElementById("modelBaseUrl");
+    const targetClassName = document.getElementById("targetClassName");
+    const thresholdInput = document.getElementById("thresholdInput");
     const cooldownInput = document.getElementById("cooldownInput");
     const voiceSelect = document.getElementById("voiceSelect");
 
     let stream;
-    let detector;
+    let model;
     let scanTimer;
     let lastSpokenAt = 0;
     let voices = [];
@@ -363,6 +368,16 @@
 
     function log(text) {
       logBox.textContent = text;
+    }
+
+    function describeError(error) {
+      if (!error) {
+        return "不明なエラー";
+      }
+
+      const name = error.name || "Error";
+      const message = error.message || "詳細メッセージなし";
+      return `${name}: ${message}`;
     }
 
     function loadVoices() {
@@ -407,72 +422,128 @@
       return Date.now() - lastSpokenAt >= cooldownMs;
     }
 
-    async function scanFrame() {
-      if (!detector || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
-        return;
-      }
-
-      try {
-        const barcodes = await detector.detect(video);
-        const target = targetText.value.trim();
-        const match = barcodes.find((item) => item.rawValue === target);
-
-        if (!match) {
-          setStatus("探索中");
-          return;
-        }
-
-        setStatus("めんだこ発見", true);
-        if (!shouldSpeakNow()) {
-          return;
-        }
-
-        lastSpokenAt = Date.now();
-        speak(scriptInput.value);
-        log(`検出: ${match.rawValue} / ${new Date().toLocaleTimeString()}`);
-      } catch (error) {
-        log(`検出エラー: ${error.message}`);
-      }
-    }
-
     async function startCamera() {
       if (!("mediaDevices" in navigator)) {
-        log("このブラウザはカメラAPIに対応していません。");
+        log("このブラウザはカメラAPIに対応していません。HTTPSまたは対応ブラウザで開いてください。");
         return;
       }
 
-      if (!("BarcodeDetector" in window)) {
-        log("このブラウザはQR検出に未対応です。Chrome系ブラウザで開いてください。");
+      if (!model) {
+        log("先に画像分類モデルを読み込んでください。");
         return;
       }
-
-      detector = new BarcodeDetector({ formats: ["qr_code"] });
 
       if (stream) {
         stream.getTracks().forEach((track) => track.stop());
       }
 
       try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false
-        });
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: { ideal: "environment" } },
+            audio: false
+          });
+        } catch (primaryError) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+          });
+          log(`背面カメラ指定に失敗したため、利用可能なカメラで起動しました。${describeError(primaryError)}`);
+        }
+
         video.srcObject = stream;
         await video.play();
 
         window.clearInterval(scanTimer);
-        scanTimer = window.setInterval(scanFrame, 700);
+        scanTimer = window.setInterval(classifyFrame, 700);
         setStatus("探索中");
-        log("カメラ起動。QRコードを映してください。");
+        if (!logBox.textContent.includes("起動しました")) {
+          log("カメラ起動。めんだこフィギュアを映してください。");
+        }
       } catch (error) {
-        log(`カメラ起動失敗: ${error.message}`);
+        const secureHint = window.isSecureContext
+          ? ""
+          : " このページは安全なコンテキストではありません。HTTPSかlocalhostで開いてください。";
+        log(`カメラ起動失敗: ${describeError(error)}.${secureHint}`);
+      }
+    }
+
+    function normalizeBaseUrl(url) {
+      if (!url) {
+        return "";
+      }
+      return url.endsWith("/") ? url : `${url}/`;
+    }
+
+    async function loadModel() {
+      const baseUrl = normalizeBaseUrl(modelBaseUrl.value.trim());
+      if (!baseUrl) {
+        log("モデルURLのベースを入力してください。");
+        return;
+      }
+
+      if (!window.tmImage) {
+        log("モデルライブラリの読み込みに失敗しています。ネットワーク接続を確認してください。");
+        return;
+      }
+
+      try {
+        setStatus("モデル読込中");
+        model = await window.tmImage.load(`${baseUrl}model.json`, `${baseUrl}metadata.json`);
+        setStatus("モデル準備完了", true);
+        log(`モデル読み込み完了。クラス数: ${model.getTotalClasses()}`);
+      } catch (error) {
+        model = null;
+        setStatus("待機中");
+        log(`モデル読み込み失敗: ${describeError(error)}。モデルURLを確認してください。`);
+      }
+    }
+
+    async function classifyFrame() {
+      if (!model || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        return;
+      }
+
+      try {
+        const predictions = await model.predict(video);
+        const target = targetClassName.value.trim();
+        const threshold = Math.min(1, Math.max(0, Number(thresholdInput.value || 0.85)));
+        const hit = predictions.find((item) => item.className === target);
+
+        if (!hit) {
+          setStatus("探索中");
+          log(`クラス "${target}" がモデルに見つかりません。metadata.json の className を確認してください。`);
+          return;
+        }
+
+        const percent = Math.round(hit.probability * 100);
+        if (hit.probability < threshold) {
+          setStatus("探索中");
+          log(`判定中: ${hit.className} ${percent}%`);
+          return;
+        }
+
+        setStatus(`めんだこ判定 ${percent}%`, true);
+        if (!shouldSpeakNow()) {
+          return;
+        }
+
+        lastSpokenAt = Date.now();
+        speak(scriptInput.value);
+        log(`検出: ${hit.className} ${percent}% / ${new Date().toLocaleTimeString()}`);
+      } catch (error) {
+        log(`推論エラー: ${describeError(error)}`);
       }
     }
 
     startButton.addEventListener("click", startCamera);
+    loadModelButton.addEventListener("click", loadModel);
     testButton.addEventListener("click", () => speak(scriptInput.value));
     stopSpeechButton.addEventListener("click", () => window.speechSynthesis.cancel());
     window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    window.clearInterval(scanTimer);
+    scanTimer = window.setInterval(classifyFrame, 700);
 
     loadVoices();
     setStatus("待機中");
