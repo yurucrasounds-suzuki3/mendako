@@ -370,6 +370,10 @@
       logBox.textContent = text;
     }
 
+    function appendLog(text) {
+      logBox.textContent = `${logBox.textContent}\n${text}`;
+    }
+
     function describeError(error) {
       if (!error) {
         return "不明なエラー";
@@ -378,6 +382,16 @@
       const name = error.name || "Error";
       const message = error.message || "詳細メッセージなし";
       return `${name}: ${message}`;
+    }
+
+    function environmentSummary() {
+      return [
+        `URL: ${window.location.protocol}`,
+        `secure: ${window.isSecureContext}`,
+        `mediaDevices: ${"mediaDevices" in navigator}`,
+        `getUserMedia: ${Boolean(navigator.mediaDevices?.getUserMedia)}`,
+        `ua: ${navigator.userAgent}`
+      ].join(" / ");
     }
 
     function loadVoices() {
@@ -423,13 +437,10 @@
     }
 
     async function startCamera() {
+      appendLog(`環境: ${environmentSummary()}`);
+
       if (!("mediaDevices" in navigator)) {
         log("このブラウザはカメラAPIに対応していません。HTTPSまたは対応ブラウザで開いてください。");
-        return;
-      }
-
-      if (!model) {
-        log("先に画像分類モデルを読み込んでください。");
         return;
       }
 
@@ -456,10 +467,12 @@
 
         window.clearInterval(scanTimer);
         scanTimer = window.setInterval(classifyFrame, 700);
-        setStatus("探索中");
-        if (!logBox.textContent.includes("起動しました")) {
-          log("カメラ起動。めんだこフィギュアを映してください。");
-        }
+        setStatus(model ? "探索中" : "カメラ起動");
+        log(
+          model
+            ? "カメラ起動。めんだこフィギュアを映してください。"
+            : "カメラ起動。次にモデル読み込みを押してください。"
+        );
       } catch (error) {
         const secureHint = window.isSecureContext
           ? ""
@@ -490,8 +503,12 @@
       try {
         setStatus("モデル読込中");
         model = await window.tmImage.load(`${baseUrl}model.json`, `${baseUrl}metadata.json`);
-        setStatus("モデル準備完了", true);
-        log(`モデル読み込み完了。クラス数: ${model.getTotalClasses()}`);
+        setStatus(stream ? "探索中" : "モデル準備完了", true);
+        log(
+          stream
+            ? `モデル読み込み完了。クラス数: ${model.getTotalClasses()}。そのまま判定を始めます。`
+            : `モデル読み込み完了。クラス数: ${model.getTotalClasses()}。次にカメラ開始を押してください。`
+        );
       } catch (error) {
         model = null;
         setStatus("待機中");
@@ -547,6 +564,7 @@
 
     loadVoices();
     setStatus("待機中");
+    appendLog(`初期環境: ${environmentSummary()}`);
   </script>
 </body>
 </html>
