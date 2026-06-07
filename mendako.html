@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>しゃべるメンダコ</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #e8f7ff;
+      padding: 30px;
+    }
+
+    .mendako {
+      font-size: 100px;
+      margin: 30px 0;
+    }
+
+    .message {
+      background: white;
+      border-radius: 20px;
+      padding: 20px;
+      margin: 20px auto;
+      max-width: 320px;
+      font-size: 20px;
+      box-shadow: 0 4px 10px #ccc;
+    }
+
+    button {
+      display: block;
+      width: 260px;
+      margin: 12px auto;
+      padding: 15px;
+      font-size: 18px;
+      border: none;
+      border-radius: 999px;
+      background: #ff8fb3;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>しゃべるメンダコ</h1>
+
+  <div class="mendako">🐙</div>
+
+  <div id="message" class="message">
+    スマホでボタンを押してね！
+  </div>
+
+  <button onclick="talk('やあ！ぼくメンダコだよ！')">あいさつする</button>
+  <button onclick="talk('もぐもぐ！エサありがとう！')">エサをあげる</button>
+  <button onclick="quiz()">クイズする</button>
+
+  <script>
+    function talk(text) {
+      document.getElementById("message").textContent = text;
+
+      const voice = new SpeechSynthesisUtterance(text);
+      voice.lang = "ja-JP";
+      voice.rate = 1.0;
+      speechSynthesis.speak(voice);
+    }
+
+    function quiz() {
+      const question = "クイズだよ！3たす2はいくつ？";
+      document.getElementById("message").textContent = question;
+
+      const voice = new SpeechSynthesisUtterance(question);
+      voice.lang = "ja-JP";
+      speechSynthesis.speak(voice);
+    }
+  </script>
+
+</body>
+</html>
