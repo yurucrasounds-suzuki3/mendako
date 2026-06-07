@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>めんだこフィギュアを見つけて喋らせる</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff7f2;
+      --panel: rgba(255, 255, 255, 0.92);
+      --line: #f1c9bc;
+      --accent: #e86f51;
+      --accent-strong: #c65138;
+      --text: #3f312f;
+      --muted: #7d6964;
+      --ok: #1f9d72;
+      --shadow: 0 24px 60px rgba(138, 85, 63, 0.16);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(255, 207, 187, 0.9), transparent 35%),
+        linear-gradient(180deg, #fff9f5 0%, #ffe8df 100%);
+    }
+
+    main {
+      width: min(1100px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    .hero {
+      margin-bottom: 24px;
+      padding: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.7);
+      border-radius: 28px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(255, 244, 238, 0.88));
+      box-shadow: var(--shadow);
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: clamp(2rem, 4vw, 3.3rem);
+      line-height: 1.05;
+      letter-spacing: 0.02em;
+    }
+
+    .lead {
+      max-width: 60ch;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 1.05rem;
+      line-height: 1.8;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.95fr);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .card {
+      padding: 22px;
+      border: 1px solid rgba(255, 255, 255, 0.72);
+      border-radius: 24px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .viewer {
+      position: relative;
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(77, 53, 49, 0.04), rgba(77, 53, 49, 0.12)),
+        #f6ddd3;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .badge {
+      position: absolute;
+      top: 16px;
+      left: 16px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: white;
+      background: rgba(125, 105, 100, 0.9);
+    }
+
+    .badge.ok {
+      background: rgba(31, 157, 114, 0.92);
+    }
+
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 18px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+      color: white;
+      background: var(--accent);
+      transition: transform 120ms ease, background 120ms ease;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: var(--accent-strong);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: #f7ded5;
+    }
+
+    .meta {
+      display: grid;
+      gap: 16px;
+    }
+
+    .section-title {
+      margin-bottom: 10px;
+      font-size: 1.1rem;
+    }
+
+    .copy {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.8;
+    }
+
+    .list,
+    .steps {
+      margin: 0;
+      padding-left: 1.2rem;
+      line-height: 1.8;
+    }
+
+    .grid {
+      display: grid;
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      font-weight: 700;
+      font-size: 0.94rem;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 12px 14px;
+      font: inherit;
+      color: var(--text);
+      background: #fffdfa;
+    }
+
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+
+    .log {
+      min-height: 56px;
+      padding: 14px;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      color: var(--muted);
+      background: rgba(255, 248, 244, 0.88);
+      line-height: 1.6;
+    }
+
+    code {
+      padding: 0.15em 0.4em;
+      border-radius: 0.5em;
+      background: #fff0ea;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.92em;
+    }
+
+    @media (max-width: 860px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      main {
+        width: min(100% - 24px, 1100px);
+        padding-top: 24px;
+      }
+
+      .hero,
+      .card {
+        border-radius: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <h1>めんだこフィギュアをカメラで見つけて喋らせる</h1>
+      <p class="lead">
+        まず動かすなら、フィギュア本体を直接画像認識させるより、台座か背面に小さなQRコードを貼って認識する方式が最も安定します。
+      </p>
+    </section>
+
+    <section class="layout">
+      <div class="card">
+        <div class="viewer">
+          <video id="video" autoplay playsinline muted></video>
+          <div class="badge" id="statusBadge">待機中</div>
+        </div>
+
+        <div class="controls">
+          <button id="startButton" type="button">カメラ開始</button>
+          <button id="testButton" type="button" class="secondary">セリフ確認</button>
+          <button id="stopSpeechButton" type="button" class="secondary">発話停止</button>
+        </div>
+      </div>
+
+      <aside class="meta">
+        <div class="card">
+          <h2 class="section-title">このページがすること</h2>
+          <ul class="list">
+            <li>ブラウザでカメラを起動</li>
+            <li>QRコードの文字列が <code>mendako</code> と一致したら</li>
+            <li>ブラウザ音声でセリフを喋る</li>
+          </ul>
+        </div>
+
+        <div class="card grid">
+          <h2 class="section-title">設定</h2>
+          <label>
+            QRコードの文字列
+            <input id="targetText" type="text" value="mendako">
+          </label>
+          <label>
+            セリフ
+            <textarea id="scriptInput">こんにちは、めんだこです。
+みつけてくれてありがとう。</textarea>
+          </label>
+          <label>
+            声
+            <select id="voiceSelect"></select>
+          </label>
+          <label>
+            連続発話の間隔(秒)
+            <input id="cooldownInput" type="number" min="2" value="8">
+          </label>
+          <div class="log" id="logBox">準備完了。カメラ開始を押してください。</div>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">使い方</h2>
+          <ol class="steps">
+            <li><code>mendako</code> という文字列のQRコードを作る</li>
+            <li>それをフィギュアの台座か背面に貼る</li>
+            <li><code>index.html</code> をChrome系ブラウザで開く</li>
+            <li>カメラ開始 を押す</li>
+            <li>フィギュアを映すと喋る</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">なぜこの方式をすすめるか</h2>
+          <ul class="list">
+            <li>認識がかなり安定する</li>
+            <li>学習データ作成が不要</li>
+            <li>スマホだけで試せる</li>
+            <li>後から「見た目だけで認識」に置き換えやすい</li>
+          </ul>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">次の段階</h2>
+          <p class="copy">フィギュア自体の形や色で認識したいなら、次のどちらかです。</p>
+          <ol class="steps">
+            <li>ノーコード寄り: Google Teachable Machine で「めんだこ / それ以外」を学習し、学習済みモデルをWebページに組み込んで、検出時に <code>speechSynthesis</code> または録音音声を再生する</li>
+            <li>しっかり作る: Python + OpenCV、カスタム物体検出モデル、音声合成APIや録音済み音声、必要なら口パク用ディスプレイやLED追加</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">おすすめ構成</h2>
+          <ol class="steps">
+            <li>QR検出で喋る</li>
+            <li>セリフをランダム化する</li>
+            <li>録音済みの声にする</li>
+            <li>画像認識に置き換える</li>
+          </ol>
+        </div>
+
+        <div class="card">
+          <h2 class="section-title">補足</h2>
+          <p class="copy">
+            完全に「フィギュア単体だけ」で認識する場合は、光の当たり方、角度、背景で精度が落ちやすいです。展示やイベント用途なら、台座マーカー方式のほうが現実的です。
+          </p>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const video = document.getElementById("video");
+    const statusBadge = document.getElementById("statusBadge");
+    const logBox = document.getElementById("logBox");
+    const startButton = document.getElementById("startButton");
+    const testButton = document.getElementById("testButton");
+    const stopSpeechButton = document.getElementById("stopSpeechButton");
+    const scriptInput = document.getElementById("scriptInput");
+    const targetText = document.getElementById("targetText");
+    const cooldownInput = document.getElementById("cooldownInput");
+    const voiceSelect = document.getElementById("voiceSelect");
+
+    let stream;
+    let detector;
+    let scanTimer;
+    let lastSpokenAt = 0;
+    let voices = [];
+
+    function setStatus(text, ok = false) {
+      statusBadge.textContent = text;
+      statusBadge.className = ok ? "badge ok" : "badge";
+    }
+
+    function log(text) {
+      logBox.textContent = text;
+    }
+
+    function loadVoices() {
+      voices = window.speechSynthesis.getVoices();
+      voiceSelect.innerHTML = "";
+
+      voices.forEach((voice, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `${voice.name} (${voice.lang})`;
+        if (voice.lang.startsWith("ja")) {
+          option.selected = true;
+        }
+        voiceSelect.appendChild(option);
+      });
+    }
+
+    function currentVoice() {
+      return voices[Number(voiceSelect.value)] ?? null;
+    }
+
+    function speak(scriptText) {
+      const lines = scriptText
+        .split(/\n+/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+
+      window.speechSynthesis.cancel();
+
+      lines.forEach((line) => {
+        const utterance = new SpeechSynthesisUtterance(line);
+        utterance.voice = currentVoice();
+        utterance.lang = utterance.voice?.lang || "ja-JP";
+        utterance.rate = 1;
+        utterance.pitch = 1.05;
+        window.speechSynthesis.speak(utterance);
+      });
+    }
+
+    function shouldSpeakNow() {
+      const cooldownMs = Math.max(2, Number(cooldownInput.value || 8)) * 1000;
+      return Date.now() - lastSpokenAt >= cooldownMs;
+    }
+
+    async function scanFrame() {
+      if (!detector || video.readyState < HTMLMediaElement.HAVE_CURRENT_DATA) {
+        return;
+      }
+
+      try {
+        const barcodes = await detector.detect(video);
+        const target = targetText.value.trim();
+        const match = barcodes.find((item) => item.rawValue === target);
+
+        if (!match) {
+          setStatus("探索中");
+          return;
+        }
+
+        setStatus("めんだこ発見", true);
+        if (!shouldSpeakNow()) {
+          return;
+        }
+
+        lastSpokenAt = Date.now();
+        speak(scriptInput.value);
+        log(`検出: ${match.rawValue} / ${new Date().toLocaleTimeString()}`);
+      } catch (error) {
+        log(`検出エラー: ${error.message}`);
+      }
+    }
+
+    async function startCamera() {
+      if (!("mediaDevices" in navigator)) {
+        log("このブラウザはカメラAPIに対応していません。");
+        return;
+      }
+
+      if (!("BarcodeDetector" in window)) {
+        log("このブラウザはQR検出に未対応です。Chrome系ブラウザで開いてください。");
+        return;
+      }
+
+      detector = new BarcodeDetector({ formats: ["qr_code"] });
+
+      if (stream) {
+        stream.getTracks().forEach((track) => track.stop());
+      }
+
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: "environment" } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+
+        window.clearInterval(scanTimer);
+        scanTimer = window.setInterval(scanFrame, 700);
+        setStatus("探索中");
+        log("カメラ起動。QRコードを映してください。");
+      } catch (error) {
+        log(`カメラ起動失敗: ${error.message}`);
+      }
+    }
+
+    startButton.addEventListener("click", startCamera);
+    testButton.addEventListener("click", () => speak(scriptInput.value));
+    stopSpeechButton.addEventListener("click", () => window.speechSynthesis.cancel());
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+
+    loadVoices();
+    setStatus("待機中");
+  </script>
+</body>
+</html>
